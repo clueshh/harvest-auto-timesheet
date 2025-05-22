@@ -2,7 +2,7 @@ from datetime import UTC, date, datetime, time, timedelta
 from typing import Any
 from zoneinfo import ZoneInfo
 
-from dotenv import load_dotenv
+import holidays
 from google.oauth2.service_account import Credentials
 from rich.console import Console
 
@@ -11,10 +11,7 @@ from harvest_auto_timesheet.harvest import Harvest
 from harvest_auto_timesheet.tasks import ProjectEnum, TaskEnum
 from harvest_auto_timesheet.util import get_joke, get_start_of_week
 
-load_dotenv(override=True)
-
 console = Console()
-
 
 SCRUM_CEREMONY_WORDS = [
     "standup",
@@ -23,6 +20,8 @@ SCRUM_CEREMONY_WORDS = [
     "retro",
     "planning",
 ]
+
+nz_holidays = holidays.NewZealand(prov="Auckland")  # type: ignore[attr-defined]
 
 
 def _get_weekdays(tz: ZoneInfo | None = None) -> list[date]:
@@ -60,6 +59,26 @@ def run_schedule(
     )
     console.print(f"Adding {len(calendar_events)} calendar events to the timesheet")
     for event in calendar_events:
+        if event.is_all_day():
+            # assuming all day events are not work related
+            console.print(f"Skipping calendar event on {event.start.date_} (all day)")
+            continue
+
+        if event.status != "confirmed":
+            # if the event is not confirmed, we don't want to add it to the timesheet
+            console.print(
+                f"Skipping calendar event on {event.start.datetime} (not confirmed)"
+            )
+            continue
+
+        if event.start.datetime.date() in nz_holidays:  # type: ignore[union-attr]
+            # if the event is on a public holiday,
+            # we don't want to add it to the timesheet
+            console.print(
+                f"Skipping calendar event on {event.start.datetime} (holiday)"
+            )
+            continue
+
         _add_calendar_event(harvest=harvest, event=event)
 
     time_entries = harvest.get_time_entries(
@@ -69,11 +88,17 @@ def run_schedule(
 
     console.print("Filling timesheet with the remaining hours")
     for weekday in weekdays:
+        if weekday in nz_holidays:
+            _add_holiday(harvest=harvest, weekday=weekday)
+            continue
+
         _fill_timesheet(
             harvest=harvest,
             time_entries=time_entries,
             weekday=weekday,
         )
+
+    console.print("Timesheet completed successfully")
 
 
 def _add_calendar_event(
@@ -81,14 +106,6 @@ def _add_calendar_event(
     event: CalendarEvent,
 ) -> None:
     """Add a calendar event to the timesheet."""
-    if event.is_all_day():
-        # assuming all day events are not work related
-        return
-
-    if event.status != "confirmed":
-        # if the event is not confirmed, we don't want to add it to the timesheet
-        return
-
     assert isinstance(event.start.datetime, datetime)
     assert isinstance(event.end.datetime, datetime)
 
@@ -109,6 +126,22 @@ def _add_calendar_event(
         hours=hours,
         notes=event.summary,
     )
+
+
+def _add_holiday(
+    harvest: Harvest,
+    weekday: date,
+) -> None:
+    """Add a holiday to the timesheet."""
+    if weekday in nz_holidays:
+        console.print(f"Adding holiday on {weekday}")
+        harvest.add_time_entry(
+            project_id=ProjectEnum.FM_INTERNAL.value,
+            task_id=TaskEnum.PUBLIC_HOLIDAY.value,
+            spent_date=weekday,
+            hours=8,
+            notes="Public holiday",
+        )
 
 
 def _fill_timesheet(
