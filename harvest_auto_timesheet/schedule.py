@@ -3,11 +3,13 @@ from typing import Any
 from zoneinfo import ZoneInfo
 
 import holidays
+import pagerduty
 from google.oauth2.service_account import Credentials
 from rich.console import Console
 
 from harvest_auto_timesheet.gcal import CalendarEvent, get_calendar_events
 from harvest_auto_timesheet.harvest import Harvest
+from harvest_auto_timesheet.pagerd import Incident, get_incidents
 from harvest_auto_timesheet.tasks import ProjectEnum, TaskEnum
 from harvest_auto_timesheet.util import get_joke, get_start_of_week
 
@@ -38,6 +40,8 @@ def run_schedule(
     harvest: Harvest,
     credentials: Credentials,
     calendar_id: str,
+    pagerduty_client: pagerduty.RestApiV2Client,
+    pagerduty_user_id: str,
 ) -> None:
     """Run the schedule for the week."""
     console.print("Running schedule...")
@@ -97,6 +101,14 @@ def run_schedule(
             time_entries=time_entries,
             weekday=weekday,
         )
+
+    incidents = get_incidents(
+        pd_client=pagerduty_client,
+        user_id=pagerduty_user_id,
+        since=weekdays[0],
+        until=weekdays[-1],
+    )
+    _add_pager_duty_incidents(harvest=harvest, incidents=incidents)
 
     console.print("Timesheet completed successfully")
 
@@ -169,3 +181,25 @@ def _fill_timesheet(
     )
     # console.print_json(data=response, indent=2)
     console.print(f"Time entry added successfully for {weekday}")
+
+
+def _add_pager_duty_incidents(
+    harvest: Harvest,
+    incidents: list[Incident],
+) -> None:
+    """Add PagerDuty incidents to the timesheet."""
+    for incident in incidents:
+        console.print(f"Adding PagerDuty incident {incident.id} to timesheet")
+
+        if (duration := incident.duration) is None:
+            # This shouldn't happen, but just in case
+            continue
+
+        hours = duration.total_seconds() / 3600
+        harvest.add_time_entry(
+            project_id=ProjectEnum.EYECUE_GENERAL.value,
+            task_id=TaskEnum.L3_ON_CALL.value,
+            spent_date=incident.resolved_at.date(),
+            hours=hours,
+            notes=f"{incident.summary}\n{incident.html_url}",
+        )

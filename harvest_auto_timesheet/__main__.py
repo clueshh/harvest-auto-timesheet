@@ -11,4 +11,6 @@ run_schedule(
     harvest=context.harvest,
     credentials=context.credentials,
     calendar_id=context.calendar_id,
+    pagerduty_client=context.pagerduty_client,
+    pagerduty_user_id=context.pagerduty_user_id,
 )

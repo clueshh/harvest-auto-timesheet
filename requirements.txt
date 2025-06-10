@@ -5,3 +5,4 @@ pydantic~=2.11.0
 holidays~=0.73
 google-api-python-client~=2.169.0
 google-auth-oauthlib~=1.2.2
+pagerduty~=2.1.0
