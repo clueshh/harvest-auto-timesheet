@@ -192,7 +192,7 @@ def _add_pager_duty_incidents(
         console.print(f"Adding PagerDuty incident {incident.id} to timesheet")
 
         if (duration := incident.duration) is None:
-            # This shouldn't happen, but just in case
+            console.print(f"[bold yellow]Warning:[/bold yellow] Incident {incident.id} has no duration. Skipping entry.")
             continue
 
         hours = duration.total_seconds() / 3600
