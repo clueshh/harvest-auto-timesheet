@@ -7,12 +7,14 @@ from pydantic import AwareDatetime, BaseModel, TypeAdapter
 class _Agent(BaseModel):
     id: str  # the user ID of the agent
 
+
 class IncidentLog(BaseModel):
     id: str
     type: str
     summary: str
     agent: _Agent
     created_at: AwareDatetime
+
 
 class Incident(BaseModel):
     id: str
@@ -51,6 +53,7 @@ class Incident(BaseModel):
             # If either acknowledged or resolved time is None, return None
             return None
 
+
 def get_incidents(
     pd_client: pagerduty.RestApiV2Client,
     user_id: str,
@@ -79,6 +82,7 @@ def get_incidents(
 
     return user_incidents
 
+
 def get_incidents_for_teams(
     pd_client: pagerduty.RestApiV2Client,
     team_ids: list[str],
@@ -101,6 +105,7 @@ def get_incidents_for_teams(
     adapter = TypeAdapter(list[Incident])
     return adapter.validate_python(incidents)
 
+
 def get_incident_logs(
     pd_client: pagerduty.RestApiV2Client,
     incident_id: str,
@@ -112,7 +117,7 @@ def get_incident_logs(
         params={
             "is_overview": "true",
             "time_zone": timezone,
-        }
+        },
     )
 
     adapter = TypeAdapter(list[IncidentLog])
