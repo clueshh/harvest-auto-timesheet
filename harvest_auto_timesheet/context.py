@@ -3,6 +3,7 @@ import json
 import os
 from dataclasses import dataclass, field
 
+import pagerduty
 from google.oauth2.service_account import Credentials
 
 from harvest_auto_timesheet.harvest import Harvest
@@ -27,8 +28,16 @@ class Context:
         default_factory=lambda: os.getenv("SERVICE_ACCOUNT_JSON_B64")
     )
 
+    pagerduty_user_id: str = field(
+        default_factory=lambda: os.environ["PAGERDUTY_USER_ID"]
+    )
+    pagerduty_api_key: str = field(
+        default_factory=lambda: os.environ["PAGERDUTY_API_TOKEN"]
+    )
+
     credentials: Credentials = field(init=False)
     harvest: Harvest = field(init=False)
+    pagerduty_client: pagerduty.RestApiV2Client = field(init=False)
 
     def __post_init__(self) -> None:
         scopes = ["https://www.googleapis.com/auth/calendar.readonly"]
@@ -50,4 +59,8 @@ class Context:
         self.harvest = Harvest(
             harvest_account_id=self.harvest_account_id,
             harvest_access_token=self.harvest_access_token,
+        )
+
+        self.pagerduty_client = pagerduty.RestApiV2Client(
+            api_key=self.pagerduty_api_key,
         )
