@@ -76,29 +76,32 @@ ban-relative-imports = "all"
 strict = true
 files = [
     "harvest_auto_timesheet",
-    # "tests",
+    "tests",
 ]
 ignore_missing_imports = true
 explicit_package_bases = true
 check_untyped_defs = true
 
-# [[tool.mypy.overrides]]
-# module = 'tests.*'
-# disable_error_code = "var-annotated"
+[[tool.mypy.overrides]]
+module = 'tests.*'
+disable_error_code = "var-annotated"
 
-# [tool.pytest.ini_options]
-# addopts = "--cov=harvest-auto-timesheet --cov=tests --cov-report term --cov-config=pyproject.toml"
-# required_plugins = ["pytest-cov"]
-# testpaths = ["tests"]
+[tool.pytest.ini_options]
+addopts = "--cov=harvest_auto_timesheet --cov=tests --cov-report term --cov-config=pyproject.toml"
+required_plugins = ["pytest-cov"]
+testpaths = ["tests"]
 
-# [tool.coverage.run]
-# branch = true
+[tool.coverage.run]
+branch = true
 
-# [tool.coverage.report]
-# skip_empty = true
-# fail_under = 80
-# sort = "cover"
-# show_missing = true
-# exclude_also = [
-#     "if __name__ == .__main__.:"
-# ]
+[tool.coverage.report]
+skip_empty = true
+fail_under = 50
+sort = "cover"
+show_missing = true
+exclude_also = [
+    "if __name__ == .__main__.:"
+]
+omit = [
+    "__main__.py",
+]

@@ -126,10 +126,12 @@ def _add_calendar_event(
     spent_date = event.start.datetime.date()
     hours = (event.end.datetime - event.start.datetime).total_seconds() / 3600
 
-    if any(word in event.summary.lower() for word in SCRUM_CEREMONY_WORDS):
-        task_id = TaskEnum.SCRUM_CEREMONIES.value
-    else:
-        task_id = TaskEnum.INTERNAL_MEETING.value
+    task_id = TaskEnum.INTERNAL_MEETING.value
+    # TODO(CW): Remove this? The scrum ceremonies task got removed so no longer needed
+    # if any(word in event.summary.lower() for word in SCRUM_CEREMONY_WORDS):
+    #     task_id = TaskEnum.SCRUM_CEREMONIES.value
+    # else:
+    #     task_id = TaskEnum.INTERNAL_MEETING.value
 
     harvest.add_time_entry(
         project_id=ProjectEnum.FM_INTERNAL.value,
