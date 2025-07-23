@@ -77,7 +77,7 @@ class Harvest:
             "hours": hours,
         }
 
-        if notes is not None:
+        if notes is not None:  # pragma: nobranch
             data["notes"] = notes
 
         response = self.client.post(url, json=data)

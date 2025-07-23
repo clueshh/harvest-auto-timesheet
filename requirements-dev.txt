@@ -1,2 +1,4 @@
 ruff
 mypy
+pytest
+pytest-cov
