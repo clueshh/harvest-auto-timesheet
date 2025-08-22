@@ -12,12 +12,26 @@ console = Console()
 context = Context()
 harvest = context.harvest
 
-response = harvest.get_time_entries(
-    from_date=get_start_of_week(),
-    to_date=get_end_of_week(),
-)
 
-for entry in response:
-    harvest.delete_time_entry(
-        time_entry_id=entry["id"],
+def main() -> None:
+    response = harvest.get_time_entries(
+        from_date=get_start_of_week(),
+        to_date=get_end_of_week(),
     )
+
+    if len(response) == 0:
+        console.print("No time entries found for the current week.")
+        return
+
+    console.print(f"Deleting {len(response)} time entries for the current week")
+    for entry in response:
+        console.print(f"Deleting time entry {entry['id']} for {entry['spent_date']}")
+        harvest.delete_time_entry(
+            time_entry_id=entry["id"],
+        )
+
+    console.print("All time entries for the current week have been deleted.")
+
+
+if __name__ == "__main__":
+    main()

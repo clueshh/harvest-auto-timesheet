@@ -63,6 +63,7 @@ lint.ignore = [
 "tests/**/*.py" = [
     "INP001",
     "ANN201",
+    "PLR2004",
 ]
 
 "scripts/**/*.py" = [

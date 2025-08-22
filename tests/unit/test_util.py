@@ -3,8 +3,14 @@ from http import HTTPStatus
 from unittest.mock import MagicMock, patch
 
 import httpx
+import pytest
 
-from harvest_auto_timesheet.util import get_end_of_week, get_joke, get_start_of_week
+from harvest_auto_timesheet.util import (
+    get_end_of_week,
+    get_joke,
+    get_start_of_week,
+    random_numbers_sum,
+)
 
 
 def test_get_end_of_week() -> None:
@@ -63,3 +69,13 @@ def test_get_joke() -> None:
 
     with patch("harvest_auto_timesheet.util.Client.get", return_value=multi_response):
         assert get_joke() == "some setup some delivery"
+
+
+def test_random_numbers_sum() -> None:
+    assert random_numbers_sum(10, 2, seed=42) == [1.867826, 8.132174]
+    assert random_numbers_sum(10, 3, seed=42) == [0.419611, 1.448215, 8.132174]
+
+    for _ in range(10_000):
+        numbers = random_numbers_sum(10, 5)
+        assert len(numbers) == 5
+        assert sum(numbers) == pytest.approx(10, rel=1e-6)

@@ -11,7 +11,12 @@ from harvest_auto_timesheet.gcal import CalendarEvent, get_calendar_events
 from harvest_auto_timesheet.harvest import Harvest
 from harvest_auto_timesheet.pagerd import Incident, get_incidents
 from harvest_auto_timesheet.tasks import ProjectEnum, TaskEnum
-from harvest_auto_timesheet.util import get_joke, get_start_of_week
+from harvest_auto_timesheet.util import (
+    get_advice,
+    get_joke,
+    get_start_of_week,
+    random_numbers_sum,
+)
 
 console = Console()
 
@@ -173,16 +178,49 @@ def _fill_timesheet(
         console.print(f"Already worked 8 hours on {weekday}")
         return
 
+    # Add a time entry for each project/task combination.
+    task_entries_to_add = [
+        (ProjectEnum.EYECUE_GENERAL.value, TaskEnum.ENGINEERING.value, get_joke),
+        (ProjectEnum.SOC2.value, TaskEnum.ENGINEERING.value, get_advice),
+        (
+            ProjectEnum.VIDEO_STORAGE_PLAYBACK.value,
+            TaskEnum.ENGINEERING.value,
+            get_advice,
+        ),
+        (ProjectEnum.CAMERA_CONFIG_API.value, TaskEnum.ENGINEERING.value, get_advice),
+    ]
+
+    # Randomly distribute the remaining hours across the tasks.
     remaining_hours = 8 - hours
-    _response = harvest.add_time_entry(
-        project_id=ProjectEnum.EYECUE_GENERAL.value,
-        task_id=TaskEnum.ENGINEERING.value,
-        spent_date=weekday,
-        hours=remaining_hours,
-        notes=get_joke(),
+    hours_per_project: list[float] = random_numbers_sum(
+        total_sum=remaining_hours,
+        num_elements=len(task_entries_to_add),
     )
-    # console.print_json(data=response, indent=2)
-    console.print(f"Time entry added successfully for {weekday}")
+
+    console.print(
+        f"Remaining hours to fill for {weekday}: {remaining_hours:.2f} "
+        f"({len(task_entries_to_add)} tasks)"
+    )
+
+    for (
+        project_id,
+        task_id,
+        notes_func,
+    ), hours in zip(task_entries_to_add, hours_per_project, strict=True):
+        console.print(
+            f"Adding {hours:.2f} hours for project {project_id} "
+            f"and task {task_id} on {weekday}"
+        )
+        _response = harvest.add_time_entry(
+            project_id=project_id,
+            task_id=task_id,
+            spent_date=weekday,
+            hours=hours,
+            notes=notes_func(),
+        )
+        # console.print_json(data=response, indent=2)
+
+    console.print(f"Filled {remaining_hours:.2f} hours for {weekday}")
 
 
 def _add_pager_duty_incidents(
